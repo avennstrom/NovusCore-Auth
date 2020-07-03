@@ -11,10 +11,10 @@ namespace Client
 {
     void GeneralHandlers::Setup(MessageHandler* messageHandler)
     {
-        messageHandler->SetMessageHandler(Opcode::CMSG_CONNECTED, { ConnectionStatus::AUTH_SUCCESS, 0, GeneralHandlers::CMSG_CONNECTED });
+        messageHandler->SetMessageHandler(Opcode::CMSG_CONNECTED, { ConnectionStatus::AUTH_SUCCESS, 0, GeneralHandlers::HandleConnected });
     }
 
-    bool GeneralHandlers::CMSG_CONNECTED(std::shared_ptr<NetworkClient> client, NetworkPacket* packet)
+    bool GeneralHandlers::HandleConnected(std::shared_ptr<NetworkClient> client, NetworkPacket* packet)
     {
         std::shared_ptr<Bytebuffer> buffer = Bytebuffer::Borrow<128>();
         buffer->Put(Opcode::SMSG_CONNECTED);

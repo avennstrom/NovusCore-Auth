@@ -10,6 +10,6 @@ namespace Client
     {
     public:
         static void Setup(MessageHandler*);
-        static bool CMSG_CONNECTED(std::shared_ptr<NetworkClient>, NetworkPacket*);
+        static bool HandleConnected(std::shared_ptr<NetworkClient>, NetworkPacket*);
     };
 }
