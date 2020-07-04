@@ -149,7 +149,7 @@ void ConnectionUpdateSystem::Self_HandleConnect(BaseSocket* socket, bool connect
         /* Send Initial Packet */
         std::shared_ptr<Bytebuffer> buffer = Bytebuffer::Borrow<512>();
 
-        authentication.srp.username = "region";
+        authentication.srp.username = "auth";
         authentication.srp.password = "password";
 
         // If StartAuthentication fails, it means A failed to generate and thus we cannot connect

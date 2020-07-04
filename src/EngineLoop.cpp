@@ -9,6 +9,8 @@
 
 // Component Singletons
 #include "ECS/Components/Singletons/TimeSingleton.h"
+#include "ECS/Components/Singletons/DBSingleton.h"
+#include "ECS/Components/Singletons/RealmlistCacheSingleton.h"
 #include "ECS/Components/Network/ConnectionSingleton.h"
 #include "ECS/Components/Network/ConnectionDeferredSingleton.h"
 #include "ECS/Components/Network/AuthenticationSingleton.h"
@@ -16,6 +18,7 @@
 // Components
 
 // Systems
+#include "ECS/Systems/RealmlistCacheSystem.h"
 #include "ECS/Systems/Network/ConnectionSystems.h"
 
 // Handlers
@@ -81,18 +84,24 @@ void EngineLoop::Run()
     _updateFramework.gameRegistry.create();
 
     TimeSingleton& timeSingleton = _updateFramework.gameRegistry.set<TimeSingleton>();
-    ConnectionSingleton& connectionSingleton = _updateFramework.gameRegistry.set<ConnectionSingleton>();
-    ConnectionDeferredSingleton& connectionDeferredSingleton = _updateFramework.gameRegistry.set<ConnectionDeferredSingleton>();
-    AuthenticationSingleton& authenticationSingleton = _updateFramework.gameRegistry.set<AuthenticationSingleton>();
 
+    DBSingleton& dbSingleton = _updateFramework.gameRegistry.set<DBSingleton>();
+    dbSingleton.auth.Connect("localhost", 3306, "root", "ascent", "novuscore", 0);
+
+    RealmlistCacheSingleton& realmlistCacheSingleton = _updateFramework.gameRegistry.set<RealmlistCacheSingleton>();
+
+    ConnectionSingleton& connectionSingleton = _updateFramework.gameRegistry.set<ConnectionSingleton>();
     connectionSingleton.networkClient = _network.client;
     connectionSingleton.networkClient->SetReadHandler(std::bind(&ConnectionUpdateSystem::Self_HandleRead, std::placeholders::_1));
     connectionSingleton.networkClient->SetConnectHandler(std::bind(&ConnectionUpdateSystem::Self_HandleConnect, std::placeholders::_1, std::placeholders::_2));
     connectionSingleton.networkClient->SetDisconnectHandler(std::bind(&ConnectionUpdateSystem::Self_HandleDisconnect, std::placeholders::_1));
-    connectionSingleton.networkClient->Connect("127.0.0.1", 8000); // This is the IP/Port for the local Novus-Service
-    
+
+    ConnectionDeferredSingleton& connectionDeferredSingleton = _updateFramework.gameRegistry.set<ConnectionDeferredSingleton>();
     connectionDeferredSingleton.networkServer = _network.server;
 
+    AuthenticationSingleton& authenticationSingleton = _updateFramework.gameRegistry.set<AuthenticationSingleton>();
+
+    connectionSingleton.networkClient->Connect("127.0.0.1", 8000); // This is the IP/Port for the local Novus-Service
     _network.server->SetConnectionHandler(std::bind(&ConnectionUpdateSystem::Server_HandleConnect, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     _network.server->Start();
 
@@ -178,12 +187,20 @@ void EngineLoop::SetupUpdateFramework()
     ServiceLocator::SetRegistry(&registry);
     SetMessageHandler();
 
+    // RealmlistCacheSystem
+    tf::Task realmlistCacheSystemTask = framework.emplace([&registry]()
+    {
+        ZoneScopedNC("RealmlistCacheSystem::Update", tracy::Color::Blue2)
+        RealmlistCacheSystem::Update(registry);
+    });
+
     // ConnectionUpdateSystem
     tf::Task connectionUpdateSystemTask = framework.emplace([&registry]()
     {
         ZoneScopedNC("ConnectionUpdateSystem::Update", tracy::Color::Blue2)
         ConnectionUpdateSystem::Update(registry);
     });
+    connectionUpdateSystemTask.gather(realmlistCacheSystemTask);
 
     // ConnectionDeferredSystem
     tf::Task connectionDeferredSystemTask = framework.emplace([&registry]()
