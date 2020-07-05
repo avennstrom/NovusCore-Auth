@@ -25,7 +25,7 @@ void ConnectionUpdateSystem::Update(entt::registry& registry)
             NC_LOG_SUCCESS("[Network/ClientSocket]: CMD: %u, Size: %u", packet->header.opcode, packet->header.size);
 #endif // NC_Debug
 
-            if (!networkMessageHandler->CallHandler(connectionSingleton.networkClient, packet.get()))
+            if (!networkMessageHandler->CallHandler(connectionSingleton.networkClient, packet))
             {
                 connectionSingleton.networkClient->Close(asio::error::shut_down);
                 return;
@@ -44,7 +44,7 @@ void ConnectionUpdateSystem::Update(entt::registry& registry)
                 NC_LOG_SUCCESS("[Network/ServerSocket]: CMD: %u, Size: %u", packet->header.opcode, packet->header.size);
 #endif // NC_Debug
 
-                if (!clientMessageHandler->CallHandler(connection.connection, packet.get()))
+                if (!clientMessageHandler->CallHandler(connection.connection, packet))
                 {
                     connection.connection->Close(asio::error::shut_down);
                     return;
@@ -166,7 +166,7 @@ void ConnectionUpdateSystem::Self_HandleConnect(BaseSocket* socket, bool connect
         u16 writtenData = static_cast<u16>(buffer->writtenData) - size;
 
         buffer->Put<u16>(writtenData, 2);
-        socket->Send(buffer.get());
+        socket->Send(buffer);
 
         NetworkClient* networkClient = static_cast<NetworkClient*>(socket);
         networkClient->SetStatus(ConnectionStatus::AUTH_CHALLENGE);

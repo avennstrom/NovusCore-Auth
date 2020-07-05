@@ -16,12 +16,12 @@ namespace InternalSocket
         messageHandler->SetMessageHandler(Opcode::SMSG_SEND_ADDRESS, { ConnectionStatus::CONNECTED, 1, GeneralHandlers::HandleSendAddress });
     }
 
-    bool GeneralHandlers::HandleConnected(std::shared_ptr<NetworkClient> networkClient, NetworkPacket* packet)
+    bool GeneralHandlers::HandleConnected(std::shared_ptr<NetworkClient> networkClient, std::shared_ptr<NetworkPacket>& packet)
     {
         networkClient->SetStatus(ConnectionStatus::CONNECTED);
         return true;
     }
-    bool GeneralHandlers::HandleSendAddress(std::shared_ptr<NetworkClient> networkClient, NetworkPacket* packet)
+    bool GeneralHandlers::HandleSendAddress(std::shared_ptr<NetworkClient> networkClient, std::shared_ptr<NetworkPacket>& packet)
     {
         u8 status = 0;
         u32 address = 0;
@@ -49,7 +49,7 @@ namespace InternalSocket
 
         entt::registry* registry = ServiceLocator::GetRegistry();
         auto& connectionComponent = registry->get<ConnectionComponent>(entity);
-        connectionComponent.connection->Send(buffer.get());
+        connectionComponent.connection->Send(buffer);
         return true;
     }
 }

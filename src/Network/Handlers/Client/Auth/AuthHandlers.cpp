@@ -20,14 +20,12 @@ namespace Client
 {
     void AuthHandlers::Setup(MessageHandler* messageHandler)
     {
-        messageHandler->SetMessageHandler(Opcode::CMSG_LOGON_CHALLENGE, { ConnectionStatus::AUTH_CHALLENGE, 4 + 2 + 4 + 256, AuthHandlers::HandshakeHandler });
+        u16 authChallengeMinSize = sizeof(u8) * 4 + sizeof(u16) + 4 + 256;
+        messageHandler->SetMessageHandler(Opcode::CMSG_LOGON_CHALLENGE, { ConnectionStatus::AUTH_CHALLENGE, authChallengeMinSize, authChallengeMinSize + 33, AuthHandlers::HandshakeHandler });
         messageHandler->SetMessageHandler(Opcode::CMSG_LOGON_HANDSHAKE, { ConnectionStatus::AUTH_HANDSHAKE, sizeof(ClientLogonHandshake), AuthHandlers::HandshakeResponseHandler });
     }
-    bool AuthHandlers::HandshakeHandler(std::shared_ptr<NetworkClient> client, NetworkPacket* packet)
+    bool AuthHandlers::HandshakeHandler(std::shared_ptr<NetworkClient> client, std::shared_ptr<NetworkPacket>& packet)
     {
-        if (client->GetStatus() != ConnectionStatus::AUTH_CHALLENGE)
-            return false;
-
         ClientLogonChallenge logonChallenge;
         logonChallenge.Deserialize(packet->payload);
 
@@ -89,12 +87,12 @@ namespace Client
 
         u16 payloadSize = serverChallenge.Serialize(buffer);
         buffer->Put<u16>(payloadSize, 2);
-        client->Send(buffer.get());
+        client->Send(buffer);
 
         client->SetStatus(ConnectionStatus::AUTH_HANDSHAKE);
         return true;
     }
-    bool AuthHandlers::HandshakeResponseHandler(std::shared_ptr<NetworkClient> client, NetworkPacket* packet)
+    bool AuthHandlers::HandshakeResponseHandler(std::shared_ptr<NetworkClient> client, std::shared_ptr<NetworkPacket>& packet)
     {
         ClientLogonHandshake clientHandshake;
         clientHandshake.Deserialize(packet->payload);
@@ -122,7 +120,7 @@ namespace Client
 
         u16 payloadSize = serverHandsake.Serialize(buffer);
         buffer->Put<u16>(payloadSize, 2);
-        client->Send(buffer.get());
+        client->Send(buffer);
 
         client->SetStatus(ConnectionStatus::AUTH_SUCCESS);
         return true;
