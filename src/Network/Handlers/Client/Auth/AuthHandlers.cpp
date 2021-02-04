@@ -47,7 +47,7 @@ namespace Client
         // TODO: Generate Random Salt & Verifier (Shorter length?) and "fake" logon challenge to not give away if an account exists or not
         if (result->GetAffectedRows() == 0)
         {
-            NC_LOG_WARNING("Unsuccessful Login for: %s", authentication.username.c_str());
+            DebugHandler::PrintWarning("Unsuccessful Login for: %s", authentication.username.c_str());
             client->Close(asio::error::no_data);
             return true;
         }
@@ -70,7 +70,7 @@ namespace Client
         // If "StartVerification" fails, we have either hit a bad memory allocation or a SRP-6a safety check, thus we should close the connection
         if (!authentication.srp.StartVerification(authentication.username, logonChallenge.A))
         {
-            NC_LOG_WARNING("Unsuccessful Login for: %s", authentication.username.c_str());
+            DebugHandler::PrintWarning("Unsuccessful Login for: %s", authentication.username.c_str());
             client->Close(asio::error::no_data);
             return true;
         }
@@ -102,13 +102,13 @@ namespace Client
 
         if (!authentication.srp.VerifySession(clientHandshake.M1))
         {
-            NC_LOG_WARNING("Unsuccessful Login for: %s", authentication.username.c_str());
+            DebugHandler::PrintWarning("Unsuccessful Login for: %s", authentication.username.c_str());
             client->Close(asio::error::no_permission);
             return true;
         }
         else
         {
-            NC_LOG_SUCCESS("Successful Login for: %s", authentication.username.c_str());
+            DebugHandler::PrintSuccess("Successful Login for: %s", authentication.username.c_str());
         }
 
         ServerLogonHandshake serverHandsake;
